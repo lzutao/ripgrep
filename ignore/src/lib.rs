@@ -47,13 +47,11 @@ See the documentation for `WalkBuilder` for many other options.
 #![deny(missing_docs)]
 #![deny(rust_2018_idioms)]
 
-extern crate crossbeam_channel as channel;
+use crossbeam_channel as channel;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate log;
-#[cfg(windows)]
-extern crate winapi_util;
 
 use std::error;
 use std::fmt;
