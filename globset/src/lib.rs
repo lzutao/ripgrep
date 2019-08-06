@@ -102,13 +102,10 @@ or to enable case insensitive matching.
 */
 
 #![deny(missing_docs)]
+#![deny(rust_2018_idioms)]
 
-extern crate aho_corasick;
-extern crate bstr;
-extern crate fnv;
 #[macro_use]
 extern crate log;
-extern crate regex;
 
 use std::borrow::Cow;
 use std::collections::{BTreeMap, HashMap};
@@ -122,9 +119,9 @@ use aho_corasick::AhoCorasick;
 use bstr::{B, ByteSlice, ByteVec};
 use regex::bytes::{Regex, RegexBuilder, RegexSet};
 
-use pathutil::{file_name, file_name_ext, normalize_path};
-use glob::MatchStrategy;
-pub use glob::{Glob, GlobBuilder, GlobMatcher};
+use crate::pathutil::{file_name, file_name_ext, normalize_path};
+use crate::glob::MatchStrategy;
+pub use crate::glob::{Glob, GlobBuilder, GlobMatcher};
 
 mod glob;
 mod pathutil;
@@ -226,7 +223,7 @@ impl ErrorKind {
 }
 
 impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.glob {
             None => self.kind.fmt(f),
             Some(ref glob) => {
@@ -237,7 +234,7 @@ impl fmt::Display for Error {
 }
 
 impl fmt::Display for ErrorKind {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             ErrorKind::InvalidRecursive
             | ErrorKind::UnclosedClass
@@ -321,7 +318,7 @@ impl GlobSet {
     ///
     /// This takes a Candidate as input, which can be used to amortize the
     /// cost of preparing a path for matching.
-    pub fn is_match_candidate(&self, path: &Candidate) -> bool {
+    pub fn is_match_candidate(&self, path: &Candidate<'_>) -> bool {
         if self.is_empty() {
             return false;
         }
@@ -344,7 +341,7 @@ impl GlobSet {
     ///
     /// This takes a Candidate as input, which can be used to amortize the
     /// cost of preparing a path for matching.
-    pub fn matches_candidate(&self, path: &Candidate) -> Vec<usize> {
+    pub fn matches_candidate(&self, path: &Candidate<'_>) -> Vec<usize> {
         let mut into = vec![];
         if self.is_empty() {
             return into;
@@ -378,7 +375,7 @@ impl GlobSet {
     /// cost of preparing a path for matching.
     pub fn matches_candidate_into(
         &self,
-        path: &Candidate,
+        path: &Candidate<'_>,
         into: &mut Vec<usize>,
     ) {
         into.clear();
@@ -537,7 +534,7 @@ enum GlobSetMatchStrategy {
 }
 
 impl GlobSetMatchStrategy {
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         use self::GlobSetMatchStrategy::*;
         match *self {
             Literal(ref s) => s.is_match(candidate),
@@ -550,7 +547,7 @@ impl GlobSetMatchStrategy {
         }
     }
 
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         use self::GlobSetMatchStrategy::*;
         match *self {
             Literal(ref s) => s.matches_into(candidate, matches),
@@ -576,12 +573,12 @@ impl LiteralStrategy {
         self.0.entry(lit.into_bytes()).or_insert(vec![]).push(global_index);
     }
 
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         self.0.contains_key(candidate.path.as_bytes())
     }
 
     #[inline(never)]
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         if let Some(hits) = self.0.get(candidate.path.as_bytes()) {
             matches.extend(hits);
         }
@@ -600,7 +597,7 @@ impl BasenameLiteralStrategy {
         self.0.entry(lit.into_bytes()).or_insert(vec![]).push(global_index);
     }
 
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         if candidate.basename.is_empty() {
             return false;
         }
@@ -608,7 +605,7 @@ impl BasenameLiteralStrategy {
     }
 
     #[inline(never)]
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         if candidate.basename.is_empty() {
             return;
         }
@@ -630,7 +627,7 @@ impl ExtensionStrategy {
         self.0.entry(ext.into_bytes()).or_insert(vec![]).push(global_index);
     }
 
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         if candidate.ext.is_empty() {
             return false;
         }
@@ -638,7 +635,7 @@ impl ExtensionStrategy {
     }
 
     #[inline(never)]
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         if candidate.ext.is_empty() {
             return;
         }
@@ -656,7 +653,7 @@ struct PrefixStrategy {
 }
 
 impl PrefixStrategy {
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         let path = candidate.path_prefix(self.longest);
         for m in self.matcher.find_overlapping_iter(path) {
             if m.start() == 0 {
@@ -666,7 +663,7 @@ impl PrefixStrategy {
         false
     }
 
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         let path = candidate.path_prefix(self.longest);
         for m in self.matcher.find_overlapping_iter(path) {
             if m.start() == 0 {
@@ -684,7 +681,7 @@ struct SuffixStrategy {
 }
 
 impl SuffixStrategy {
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         let path = candidate.path_suffix(self.longest);
         for m in self.matcher.find_overlapping_iter(path) {
             if m.end() == path.len() {
@@ -694,7 +691,7 @@ impl SuffixStrategy {
         false
     }
 
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         let path = candidate.path_suffix(self.longest);
         for m in self.matcher.find_overlapping_iter(path) {
             if m.end() == path.len() {
@@ -708,7 +705,7 @@ impl SuffixStrategy {
 struct RequiredExtensionStrategy(HashMap<Vec<u8>, Vec<(usize, Regex)>, Fnv>);
 
 impl RequiredExtensionStrategy {
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         if candidate.ext.is_empty() {
             return false;
         }
@@ -726,7 +723,7 @@ impl RequiredExtensionStrategy {
     }
 
     #[inline(never)]
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         if candidate.ext.is_empty() {
             return;
         }
@@ -747,11 +744,11 @@ struct RegexSetStrategy {
 }
 
 impl RegexSetStrategy {
-    fn is_match(&self, candidate: &Candidate) -> bool {
+    fn is_match(&self, candidate: &Candidate<'_>) -> bool {
         self.matcher.is_match(candidate.path.as_bytes())
     }
 
-    fn matches_into(&self, candidate: &Candidate, matches: &mut Vec<usize>) {
+    fn matches_into(&self, candidate: &Candidate<'_>, matches: &mut Vec<usize>) {
         for i in self.matcher.matches(candidate.path.as_bytes()) {
             matches.push(self.map[i]);
         }
@@ -839,7 +836,7 @@ impl RequiredExtensionStrategyBuilder {
 #[cfg(test)]
 mod tests {
     use super::GlobSetBuilder;
-    use glob::Glob;
+    use crate::glob::Glob;
 
     #[test]
     fn set_works() {

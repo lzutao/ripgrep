@@ -8,6 +8,7 @@ process of matching one or more glob patterns against a single candidate path
 simultaneously, and returning all of the globs that matched.
 """
 documentation = "https://docs.rs/globset"
+edition = "2018"
 homepage = "https://github.com/BurntSushi/ripgrep/tree/master/globset"
 repository = "https://github.com/BurntSushi/ripgrep/tree/master/globset"
 readme = "README.md"

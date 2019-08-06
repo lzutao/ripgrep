@@ -4,15 +4,7 @@ tool itself, see the benchsuite directory.
 */
 #![feature(test)]
 
-extern crate glob;
-extern crate globset;
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
 extern crate test;
-
-use std::ffi::OsStr;
-use std::path::Path;
 
 use globset::{Candidate, Glob, GlobMatcher, GlobSet, GlobSetBuilder};
 
