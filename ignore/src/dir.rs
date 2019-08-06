@@ -18,12 +18,12 @@ use std::ffi::{OsString, OsStr};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, RwLock};
 
-use gitignore::{self, Gitignore, GitignoreBuilder};
-use pathutil::{is_hidden, strip_prefix};
-use overrides::{self, Override};
-use types::{self, Types};
-use walk::DirEntry;
-use {Error, Match, PartialErrorBuilder};
+use crate::gitignore::{self, Gitignore, GitignoreBuilder};
+use crate::pathutil::{is_hidden, strip_prefix};
+use crate::overrides::{self, Override};
+use crate::types::{self, Types};
+use crate::walk::DirEntry;
+use crate::{Error, Match, PartialErrorBuilder};
 
 /// IgnoreMatch represents information about where a match came from when using
 /// the `Ignore` matcher.
@@ -459,7 +459,7 @@ impl Ignore {
     }
 
     /// Returns an iterator over parent ignore matchers, including this one.
-    pub fn parents(&self) -> Parents {
+    pub fn parents(&self) -> Parents<'_> {
         Parents(Some(self))
     }
 
@@ -721,10 +721,10 @@ mod tests {
     use std::io::Write;
     use std::path::Path;
 
-    use dir::IgnoreBuilder;
-    use gitignore::Gitignore;
-    use tests::TempDir;
-    use Error;
+    use crate::dir::IgnoreBuilder;
+    use crate::gitignore::Gitignore;
+    use crate::tests::TempDir;
+    use crate::Error;
 
     fn wfile<P: AsRef<Path>>(path: P, contents: &str) {
         let mut file = File::create(path).unwrap();
@@ -742,7 +742,7 @@ mod tests {
         }
     }
 
-    fn tmpdir(prefix: &str) -> TempDir {
+    fn tmpdir(_prefix: &str) -> TempDir {
         TempDir::new().unwrap()
     }
 

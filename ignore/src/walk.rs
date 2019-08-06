@@ -10,15 +10,15 @@ use std::thread;
 use std::time::Duration;
 use std::vec;
 
-use channel;
+use crate::channel;
 use same_file::Handle;
 use walkdir::{self, WalkDir};
 
-use dir::{Ignore, IgnoreBuilder};
-use gitignore::GitignoreBuilder;
-use overrides::Override;
-use types::Types;
-use {Error, PartialErrorBuilder};
+use crate::dir::{Ignore, IgnoreBuilder};
+use crate::gitignore::GitignoreBuilder;
+use crate::overrides::Override;
+use crate::types::Types;
+use crate::{Error, PartialErrorBuilder};
 
 /// A directory entry with a possible error attached.
 ///
@@ -262,7 +262,7 @@ struct DirEntryRaw {
 }
 
 impl fmt::Debug for DirEntryRaw {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Leaving out FileType because it doesn't have a debug impl
         // in Rust 1.9. We could add it if we really wanted to by manually
         // querying each possibly file type. Meh. ---AG
@@ -508,7 +508,7 @@ enum Sorter {
 }
 
 impl fmt::Debug for WalkBuilder {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("WalkBuilder")
             .field("paths", &self.paths)
             .field("ig_builder", &self.ig_builder)
@@ -1730,7 +1730,7 @@ mod tests {
     use std::path::Path;
     use std::sync::{Arc, Mutex};
 
-    use tests::TempDir;
+    use crate::tests::TempDir;
     use super::{DirEntry, WalkBuilder, WalkState};
 
     fn wfile<P: AsRef<Path>>(path: P, contents: &str) {
@@ -1816,7 +1816,7 @@ mod tests {
         paths
     }
 
-    fn tmpdir(prefix: &str) -> TempDir {
+    fn tmpdir(_prefix: &str) -> TempDir {
         TempDir::new().unwrap()
     }
 
